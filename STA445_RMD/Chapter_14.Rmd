@@ -1,0 +1,120 @@
+---
+title: "Chapter_14"
+author: Brooke Schmidt
+date: "2026-11-06"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(MASS)
+library(dplyr)
+library(readr)
+library(Lock5Data)
+library(broom)
+library(faraway)
+library(tinytex)
+library(readxl)
+library(microbenchmark)
+library(stringr)
+library(RColorBrewer)
+library(latex2exp)
+```
+
+## Exercises  {#Exercises_DataReshaping}
+
+### Exercise 2 {-}
+
+Using the `datasets::trees` data, complete the following. This question refreshes create a linear model, graphing the linear model, and introduces using some LaTeX expressions on the graph.
+
+**a)** Create a regression model for $y=$ `Volume` as a function of $x=$ `Height`.
+
+```{r}
+?trees
+model <- lm(Volume ~ Height, data = trees)
+data <- trees %>% mutate(fit = fitted(model))
+```
+
+
+**b)** Display the `summary` of the  model to view the y-intercept and slope of the regression line.
+
+```{r}
+summary(model)
+```
+
+
+**c)** Using `ggplot2`, create a scatter plot of Volume vs Height. 
+
+```{r}
+ggplot(data, aes(x = Height, y = Volume)) + geom_point()
+```
+
+
+**d)** Color the scatter using the `Girth` variable.
+
+```{r}
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth))
+```
+
+
+**e)** Modify the color scheme using a RColorBrewer palette.
+
+```{r}
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth)) + scale_color_distiller(palette = "Greens", direction = 1)
+```
+
+
+**f)** Create a nice white filled rectangle to add text information. The following might be useful.
+
+```{r}
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth)) + scale_color_distiller(palette = "Greens", direction = 1) +
+annotate('rect', xmin=65, xmax=75, ymin=60, ymax=74, 
+         fill='white', color='black') 
+```
+
+**g)** Use the `broom` package to extract the coefficients of the best-fit line. Add this information as an annotation to the graph, which should follow a form that looks like $\hat{y}_i = (INTERCEPT) + (SLOPE)* x_i$. Place the annotation within the white text box.
+
+```{r}
+tidy <- broom::tidy(model)
+#tidy
+intercept <- round(tidy$estimate[1], 2) 
+#intercept
+slope <- round(tidy$estimate[2], 2) 
+#slope
+eq <- str_c("$\\hat{y}_i = ", intercept, " + ", slope, " * x_i$")
+
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth)) + scale_color_distiller(palette = "Greens", direction = 1) + annotate('rect', xmin = 65, xmax = 75, ymin = 60, ymax = 74, fill = 'white', color = 'black') + annotate('text', x = 70, y = 70, label = TeX(eq), size = 3.5)
+```
+
+
+**h)** Use the `broom` package to extract the coefficient of determination $r^2$ from the model. Add the annotation to your graph, which should look something like $R^2 = (VALUE)$
+
+```{r}
+glance <- broom::glance(model)
+r_sq <- round(glance$r.squared, 3)
+r2_eq <- str_c("$R^2 = ", r_sq, "$")
+
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth)) + scale_color_distiller(palette = "Greens", direction = 1) + annotate('rect', xmin = 65, xmax = 75, ymin = 60, ymax = 74, fill = 'white', color = 'black') + annotate('text', x = 70, y = 70, label = TeX(eq), size = 3.5) + annotate('text', x = 70, y = 64, label = TeX(r2_eq), size = 3.5)
+```
+
+
+**i)** Add the regression line in red. There are several ways to do this.
+
+```{r}
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth)) + scale_color_distiller(palette = "Greens", direction = 1) + geom_line(aes(y = fit), color = "red") + annotate('rect', xmin = 65, xmax = 75, ymin = 60, ymax = 74, fill = 'white', color = 'black') + annotate('text', x = 70, y = 70, label = TeX(eq), size = 3.5) + annotate('text', x = 70, y = 64, label = TeX(r2_eq), size = 3.5)
+```
+
+**j)** Properly label the axes of the graph.
+
+```{r}
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth)) + scale_color_distiller(palette = "Greens", direction = 1) + geom_line(aes(y = fit), color = "red") + annotate('rect', xmin = 65, xmax = 75, ymin = 60, ymax = 74, fill = 'white', color = 'black') + annotate('text', x = 70, y = 70, label = TeX(eq), size = 3.5) + annotate('text', x = 70, y = 64, label = TeX(r2_eq), size = 3.5) + labs(x = "Height (ft)", y = "Volume (cubic ft)", color = "Girth (in)")
+```
+
+
+**k)** Add a descriptive title to the graph.
+
+```{r}
+ggplot(data, aes(x = Height, y = Volume)) + geom_point(aes(color = Girth)) + scale_color_distiller(palette = "Greens", direction = 1) + geom_line(aes(y = fit), color = "red") + annotate('rect', xmin = 65, xmax = 75, ymin = 60, ymax = 74, fill = 'white', color = 'black') + annotate('text', x = 70, y = 70, label = TeX(eq), size = 3.5) + annotate('text', x = 70, y = 64, label = TeX(r2_eq), size = 3.5) + labs(title = "Black Cherry Tree Timber Volume vs. Height", x = "Height (ft)", y = "Volume (cubic ft)", color = "Girth (in)")
+```
+

@@ -1,0 +1,60 @@
+---
+title: "Assignment 1"
+author: Brooke Schmidt
+date: "2026-08-24"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+
+### Exercise 1 {-}
+
+Calculate $\log\left(6.2\right)$ first using base $e$ and second using base $10$. To figure out how to do different bases, it might be helpful to look at the help page for the `log` function.
+
+```{r}
+(log(6.2))
+```
+
+The log of 6.2 using base $e$ is 1.824.
+
+
+```{r}
+(log(6.2,10))
+```
+
+The log of 6.2 using base $10$ is 0.792.
+
+
+### Exercise 2 {-} 
+
+Calculate the square root of 2 and save the result as the variable named sqrt2. Have R display the decimal value of sqrt2. *Hint: use Google to find the square root function. Perhaps search on the keywords "R square root function".*
+
+```{r}
+sqrt2 <- sqrt(2)
+sqrt2
+```
+
+The square root of 2 is 1.412 and the value is saved as "sqrt2".
+
+
+### Exercise 3 {-} 
+
+This exercise walks you through installing a package with all the data sets used in the textbook *The Statistical Sleuth*.
+
+**a)** Install the package `Sleuth3` on your computer using RStudio.
+
+**b)** Load the package using the `library()` command.
+
+**c)** Print out the data set `case0101`.
+
+```{r}
+#install.packages(Sleuth3)
+library(Sleuth3)
+data('case0101', package='Sleuth3')
+head(case0101)
+```
+
+After installing the package `Sleuth3` once I loaded the package and printed out the first 6 rows of the data set `case0101`.  

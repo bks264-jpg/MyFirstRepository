@@ -1,0 +1,169 @@
+---
+title: "Assignment_5"
+author: Brooke Schmidt
+date: "2026-09-14"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(MASS)
+library(dplyr)
+library(readr)
+library(Lock5Data)
+library(broom)
+library(faraway)
+```
+
+## Exercises  {#Exercises_ModelBuilding}
+
+
+### Exercise 1 {-}
+
+
+Using the `trees` data frame that comes pre-installed in R, we will fit the regression model that uses the tree `Height` as a predictor to explain the `Volume` of wood harvested from the tree. We will then plot our model with some of the information of the regression model on the graph.
+
+**a)**  Graph the data
+
+```{r}
+ggplot( data=trees, aes(x=Height, y=Volume) ) +  
+    geom_point() + labs( title='Tree Height vs. Lumber Volume' ) +
+  labs( x="Tree Height (ft)", y="Lumber Volume (cubic ft)" ) 
+```
+
+
+**b)**  Fit a `lm` model using the command `model <- lm(Volume ~ Height, data=trees)`.
+
+```{r}
+model <- lm(Volume ~ Height, data=trees)
+summary(model)
+```
+
+
+**c)** Print out the table of coefficients with estimate names, estimated value, standard error, and upper and lower $95\%$ confidence intervals.
+
+```{r}
+broom::tidy(model, conf.int=TRUE)
+```
+
+
+**d)** Add the model fitted values to the `trees` data frame along with the confidence interval.
+
+```{r}
+predictions <- predict(model, interval = "confidence")
+trees <- cbind(trees, predictions)
+head(trees)
+```
+
+
+**e)** Graph the data including now the fitted regression line and confidence interval ribbon.
+
+```{r}
+ggplot(trees, aes(x = Height, y = Volume)) +
+  geom_point() +
+  geom_line(aes(y = fit)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "cornflowerblue", alpha = 0.4) +
+  labs(
+    title = "Tree Height vs. Lumber Volume",
+    x = "Tree Height (ft)",
+    y = "Lumber Volume (cubic ft)")
+```
+
+
+**f)** Add the R-squared value as an annotation to the graph.
+
+```{r}
+Rsq_string <- broom::glance(model) %>%
+  pull(r.squared) %>%
+  round(digits = 3) %>%
+  paste("Rsq =", .)
+
+ggplot(trees, aes(x = Height, y = Volume)) +
+  geom_point() +
+  geom_line(aes(y = fit)) +
+  geom_ribbon(aes(ymin = lwr, ymax = upr), fill = "cornflowerblue", alpha = 0.4) +
+  annotate("label", label = Rsq_string, x = 68, y = 60, size = 5) +
+  labs(
+    title = "Tree Height vs. Lumber Volume",
+    x = "Tree Height (ft)",
+    y = "Lumber Volume (cubic ft)")
+```
+
+
+  
+### Exercise 2 {-}
+
+
+The data set `phbirths` from the `faraway` package contains information on birth weight, gestational length, and smoking status of mother. We'll fit a quadratic model to predict infant birth weight using the gestational time.
+
+**a)** Create two faceted scatter plots of gestational length and birth weight, one for each smoking status.
+
+```{r}
+ggplot(phbirths, aes(x = gestate, y = grams)) + geom_point() + facet_grid(.~smoke)
+```
+
+
+**b)** Remove all the observations that are premature (less than 36 weeks). 
+
+```{r}
+phbirths <- phbirths %>% filter(gestate >= 36)
+head(phbirths)
+```
+
+
+**For the remainder of the problem, only use full-term births (greater than or equal to 36 weeks).**
+
+**c)**  Fit the quadratic model
+
+```{r}
+model_2 <- lm(grams ~ poly(gestate,2) * smoke, data=phbirths)
+summary(model_2)
+```
+
+**d)**  Add the model fitted values to the `phbirths` data frame along with the regression model confidence intervals.
+
+```{r}
+ci <- predict(model_2, interval='confidence')
+phbirths_fit <- phbirths %>% mutate( fit = ci[, "fit"], lwr = ci[, "lwr"], upr = ci[, "upr"])
+head(phbirths_fit)
+```
+
+
+**e)** Improve your graph from part (a) by adding layers for the model fits and confidence interval ribbon for the model fits.
+
+```{r}
+ggplot(phbirths_fit, aes(x = gestate, y = grams)) +
+  geom_point() +
+  geom_ribbon(aes(ymin = lwr, ymax = upr, fill = factor(smoke)), alpha = 0.3) +
+  geom_line(aes(y = fit, color = factor(smoke))) +
+  facet_grid(. ~ smoke) +
+  labs(
+    x = "Gestational Time (weeks)", 
+    y = "Birth Weight (grams)",
+    title = "Birth Weight by Gestational Age and Smoking Status"
+  ) + theme_bw() +
+  theme(legend.position = "none")
+```
+
+
+**f)** Create a column for the residuals in the `phbirths` data set using any of the following (you only need one):
+
+```{r}
+phbirths <- phbirths %>% mutate( residuals = resid(model_2) )
+head(phbirths)
+```
+
+**g)** Create a histogram of the residuals.
+
+```{r}
+ggplot(phbirths, aes(x = residuals)) +
+  geom_histogram(bins = 30, fill = 'lightskyblue2', color = 'grey60') + 
+  labs(
+    x = "Residuals", 
+    y = "Count", 
+    title = "Histogram of Residuals"
+  ) +
+  theme_minimal()
+```
+

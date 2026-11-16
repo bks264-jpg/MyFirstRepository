@@ -1,0 +1,204 @@
+---
+title: "Chapter_12"
+author: "Brooke Schmidt"
+date: "2026-10-26"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(MASS)
+library(dplyr)
+library(readr)
+library(Lock5Data)
+library(broom)
+library(faraway)
+library(tinytex)
+library(readxl)
+library(microbenchmark)
+library(stringr)
+library(lubridate)
+library(mosaicData)
+```
+
+## Exercises  {#Exercises_Dates}
+
+
+### Exercise 1 {-}
+
+Convert the following to date or date/time objects.
+
+**a)** September 13, 2010.
+
+```{r}
+	format(mdy('September 13, 2010'), '%B %d, %Y')
+```
+
+
+**b)** Sept 13, 2010.
+
+```{r}
+#mdy('Sept 13, 2010')
+format(mdy('Sep 13, 2010'), '%b %d, %Y')
+```
+
+The standard abbreviation for September is "Sep" so I used that instead of "Sept".
+
+
+**c)** Sep 13, 2010.
+
+```{r}
+format(mdy('Sep 13, 2010'), '%b %d, %Y')
+```
+
+
+**d)** S 13, 2010. Comment on the month abbreviation needs.
+
+```{r}
+#mdy('S 13, 2010')
+format(mdy('Sep 13, 2010'), '%b %d, %Y')
+```
+
+This doesn't work because "S" isn't a specific enough abbreviation for September. The month needs to be abbreviated as "Sep" for R to recognize it.
+
+
+**e)** 07-Dec-1941.
+
+```{r}
+format(dmy('07-Dec-1941'), '%d-%b-%Y')
+```
+
+
+**f)** 1-5-1998. Comment on why you might be wrong.
+
+```{r}
+format(dmy('1-5-1998'), '%d-%m-%Y')
+```
+I don't know if the date refers to May 1, 1998 or Janurary 5, 1998 because the numbers ambigious for which is the date and which is the month.
+
+
+**g)** 21-5-1998. Comment on why you know you are correct.
+
+```{r}
+format(dmy('21-5-1998'), '%d-%m-%Y')
+```
+I know that I am correct because there can be 21st day but not a 21st month so the date has to be May 21, 1998.
+
+
+**h)** 2020-May-5 10:30 am
+
+```{r}
+format(ymd_hm('2020-May-5 10:30 am'), '%Y-%b-%d %I:%M %p')
+```
+
+
+**i)** 2020-May-5 10:30 am PDT (ex Seattle)
+
+```{r}
+i <- ymd_hm('2020-May-5 10:30 am', tz='America/Los_Angeles')
+format(i, '%Y-%b-%d %I:%M %p %Z')
+```
+
+
+**j)** 2020-May-5 10:30 am AST (ex Puerto Rico)
+
+```{r}
+j <- ymd_hm('2020-May-5 10:30 am', tz='America/Puerto_Rico')
+format(j, '%Y-%b-%d %I:%M %p %Z')
+```
+
+
+
+### Exercise 3 {-}
+
+Suppose you have arranged for a phone call to be at 3 pm on May 8, 2025 at Arizona time. However, the recipient will be in Auckland, NZ. What time will it be there? 
+
+```{r}
+call <- ymd_hm('2025-05-08 15:00', tz='US/Arizona')
+with_tz(call, tz='Pacific/Auckland')
+```
+
+The phone call would be at 10:00 AM on May 9, 2025 in Auckland, New Zealand. 
+
+
+### Exercise 4 {-}
+
+From this book's [GitHub](https://github.com/BuscagliaR/STA_444_v2/) directory, navigate to the `data-raw` directory and then download the `Pulliam_Airport_Weather_Station.csv` data file. (*There are several weather station files. Make sure you get the correct one!*)  There is a `DATE` column (is it of type `date` when you import the data?) as well as the Maximum and Minimum temperature. For the last 5 years of data included in the file, plot the time series of daily maximum temperature with date on the x-axis. Write your code so that it will work if I update the date set. *Hint: Find the maximum date in the data set and then subtract 5 years. Will there be a difference if you use `dyears(5)` vs `years(5)`? Which seems more appropriate here?*
+
+```{r warning=FALSE}
+weather <- read_csv('Pulliam_Airport_Weather_Station.csv', show_col_types = FALSE)
+head((weather))
+```
+
+```{r}
+weather <- weather %>%
+  mutate(DATE = ymd(DATE))
+
+max.date <- max(weather$DATE, na.rm=TRUE)
+
+weather.5 <- weather %>%
+  filter(DATE >= max.date - years(5),
+         DATE <= max.date)
+
+ggplot(weather.5, aes(x=DATE, y=TMAX)) +
+  geom_line() +
+  labs(title='Daily Maximum Temperature',
+       x='Date',
+       y='Maximum Temperature (F)')
+```
+
+There is a difference between using `dyears(5)` and `years(5)` because `dyears(5)` uses a fixed amount of time in seconds while `years(5)` uses calendar years. I think `years(5)` is better to use because we want the last five calendar years of data rather than a specific number of seconds.
+
+
+### Exercise 5 {-}
+
+It turns out there is some interesting periodicity regarding the number of births on particular days of the year.
+
+**a)** Using the `mosaicData` package, load the data set `Births78` which records the number of children born on each day in the United States in 1978. Because this problem is intended to show how to calculate the information using the `date`, remove all the columns *except* `date` and `births`.
+
+```{r}
+?('Births78')
+clean <- Births78 %>%
+  dplyr::select(date, births)
+head(clean)
+```
+
+
+**b)** Graph the number of `births` vs the `date` with date on the x-axis. What stands out to you? Why do you think we have this trend?
+
+```{r}
+ggplot(clean, aes(x=date, y=births)) +
+  geom_point() +
+  labs(title='Daily Births in 1978',
+       x='Date',
+       y='Number of Births')
+```
+
+There seems to be a repeating pattern where some days have fewer births than others and can see two trend lines that seem to follow a similar pattern. The low birth and high birth lines could be because some days during the week there is more births happening than other days of the week.
+
+
+**c)** To test your assumption, we need to figure out the what day of the week each observation is. Use `dplyr::mutate` to add a new column named `dow` that is the day of the week (Monday, Tuesday, etc). This calculation will involve some function in the `lubridate` package and the `date` column.
+
+```{r}
+clean_d <- clean %>%
+  mutate(dow = wday(date, label=TRUE, abbr=FALSE))
+head(clean_d)
+```
+
+
+**d)** Plot the data with the point color being determined by the day of the week variable.
+
+```{r}
+ggplot(clean_d, aes(x=date, y=births, color=dow)) +
+  geom_point() +
+  labs(title='Daily Births by Day of the Week',
+       x='Date',
+       y='Number of Births',
+       color='Day of Week')
+```
+
+Looking at specific day of week for the data really help to show that the lower birth line seems to be weekend births while the higher birth line is more weekday births. This shows that more births happened in the week compared to the weekend in the 1978.

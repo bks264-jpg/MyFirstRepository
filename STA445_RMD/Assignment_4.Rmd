@@ -1,0 +1,170 @@
+---
+title: "Assignment_4"
+author: Brooke Schmidt
+date: "2026-09-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(MASS)
+library(dplyr)
+library(readr)
+```
+
+## Exercises  {#Exercises_IntroDataWrangling}
+
+
+### Exercsie 1 {-}
+
+
+The data set `ChickWeight` tracks the weights of 48 baby chickens (chicks) feed four different diets.
+
+**a)** Load the data set using
+
+```{r}
+data(ChickWeight)
+```
+        
+**b)** Look at the help files for the description of the columns.
+
+```{r}
+?ChickWeight
+```
+
+
+**c)** Remove all the observations except for observations from day 10 or day 20. The tough part in this instruction is distinguishing between "and" and "or". Obviously there are no observations that occur from both day 10 AND day 20. Google 'R logical operators' to get an introduction to those, but the short answer is that and is `&` and or is `|`.
+
+```{r}
+chicks_days <- ChickWeight %>% filter(Time == 10 | Time == 20) %>% dplyr::select(weight, Time, Diet)
+```
+
+I filtered the dataset using the OR operator (|) to keep only observations on day 10 or day 20.
+
+**d)** Calculate the mean and standard deviation of the chick weights for each diet group on days 10 and 20. 
+
+```{r}
+chicks_summary <- chicks_days %>% group_by(Diet, Time) %>% summarise(mean_weight = mean(weight), sd_weight = sd(weight), .groups = "drop" )
+chicks_summary
+```
+
+I grouped data by diet and time and then used summarise() to calculate the  mean and standard deviation for each diet group on days 10 and 20.
+
+        
+### Exercise 2 {-}
+
+
+The OpenIntro textbook on statistics includes a data set on body dimensions.
+
+**a)**  Load the file using 
+
+```{r}
+Body <- read.csv('http://www.openintro.org/stat/data/bdims.csv')
+```
+        
+**b)** The column `sex` is coded as a 1 if the individual is male and 0 if female. This is a non-intuitive labeling system. Create a new column `sex.MF` that uses labels Male and Female. Use this column for the rest of the problem. _Hint: The `ifelse()` command will be very convenient here._
+
+```{r}
+Body <- Body %>% mutate(sex.MF = ifelse(sex == 1, "Male", "Female"))
+Body %>% dplyr::select(sex:sex.MF) %>% slice(1:6)
+```
+
+I used mutate() with ifelse() to transform the binary sex codes into the text labels male/female.
+
+**c)** The columns `wgt` and `hgt` measure weight and height in kilograms and centimeters (respectively). Use these to calculate the Body Mass Index (BMI) for each individual where
+
+$$
+BMI=\frac{Weight\,(kg)}{\left[Height\,(m)\right]^{2}}
+$$
+Be mindful of the units used in the BMI calculation. Some unit conversion is required.
+
+```{r}
+Body <- Body %>% mutate(BMI = wgt / (hgt / 100)^2)
+Body %>% dplyr::select(BMI) %>% slice(1:6)
+```
+
+I calculated the individual BMI values by converting centimeters into meters for height then divided weight by height.
+
+**d)** Double check that your calculated BMI column is correct by examining the summary statistics of the column (e.g. `summary(Body)`). BMI values should be roughly between $16$ to $40$.  Did you make an error in your calculation?
+
+```{r}
+summary(Body$BMI)
+```
+
+I generated a summary statistics of the computed BMI column to verify that my values fall within the expected range and since they did fall in the expected range I don't think I made an error in my calculations.
+
+**e)** The function `cut` takes a vector of continuous numerical data and creates a factor based on your given cut-points.
+
+```{r}
+# Define a continuous vector to convert to a factor
+x <- 1:10
+
+# divide range of x into three groups of equal length
+cut(x, breaks=3)
+
+# divide x into four groups, where I specify all 5 break points 
+cut(x, breaks = c(0, 2.5, 5.0, 7.5, 10))
+# (0,2.5] (2.5,5] means 2.5 is included in first group
+# right=FALSE changes this to make 2.5 included in the second  
+
+# divide x into 3 groups, but give them a nicer
+# set of group names
+cut(x, breaks=3, labels=c('Low','Medium','High'))
+```
+
+Create a new column of in the data frame that divides the age into decades (10-19, 20-29, 30-39, etc). Notice the oldest person in the study is $67$.
+
+```{r}
+Body <- Body %>%
+  mutate( Age.Grp = cut(age, breaks=c(10,20,30,40,50,60,70), right=FALSE))
+Body %>% dplyr::select(Age.Grp:sex.MF) %>% slice(1:6)
+```
+
+I created a new column "Age.Grp" in the data frame that divided the age into decades
+      
+**f)** Find the average BMI for each `Sex.MF` by `Age.Grp` combination.
+
+```{r}
+Body %>% 
+  group_by(sex.MF, Age.Grp) %>% 
+  summarise(mean_BMI = mean(BMI, na.rm = TRUE))
+```
+
+I calculated the average BMI for all combinations.
+    
+### Exercise 3 {-}
+
+Suppose we have a data frame with the following two variables:
+
+```{r}
+df <- tribble(
+  ~SubjectID, ~Outcome,
+  1, 'good',
+  1, 'good',
+  1, 'good',
+  2, 'good',
+  2, 'bad', 
+  2, 'good',
+  3, 'bad',
+  4, 'good',
+  4, 'good')
+```
+    
+The `SubjectID` represents a particular individual that has had multiple measurements. What we want to know is what proportion of individuals were consistently `good` for all outcomes they had observed. So in our toy example set, subjects `1` and `4` where consistently good, so our answer should be $50\%$. *Hint: The steps below help understand the thinking behind coding this answer.*
+    
+**a)** As a first step, we will summarize each subject with a column denotes if all the subject's observations were `good`. This should result in a column of TRUE/FALSE values with one row for each subject. *The `all()` function should be quite useful here. The corresponding `any()` function is also useful to know about.*.
+
+```{r}
+df <- df %>% group_by(SubjectID) %>% summarise(all_good = all(Outcome == 'good'))
+df
+```
+I grouped the data by individual subjects and wrapped all() inside summarise() to change good/bad into true/false.
+
+**b)** Calculate the proportion of subjects that where consistently good by calculating the `mean()` of the TRUE/FALSE values. _This works because TRUE/FALSE values are converted to 1/0 values and then averaged._
+
+```{r}
+df %>% summarise(df = mean(all_good))
+```
+
+I calculated the proportion of subjects that where consistently good by calculating the `mean()`.
